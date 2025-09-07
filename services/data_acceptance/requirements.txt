@@ -1,0 +1,2 @@
+tinytag==2.1.2
+kafka-python==2.2.15
