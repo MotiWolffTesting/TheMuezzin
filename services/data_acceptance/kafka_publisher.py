@@ -1,13 +1,14 @@
 from kafka import KafkaProducer
 import json
-import os
 import logging 
+from config import DataAcceptanceConfig
 
 logger = logging.getLogger(__name__)
 
+
 class KafkaPublisher:
     """Kafka Producer class that recieves the json"""
-    def __init__(self, bootstrap_servers: str, topic: str = os.getenv("KAFKA_TOPIC", "file_metadata_topic")) -> None:
+    def __init__(self, bootstrap_servers: str, topic: str = DataAcceptanceConfig.from_env().kafka_topic_name) -> None:
         "Initiate topic"
         self.topic = topic
         

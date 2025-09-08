@@ -8,4 +8,8 @@ COPY . /app
 RUN apt-get update && apt-get upgrade -y && apt-get clean && \
 	pip install --no-cache-dir -r requirements.txt
 
-CMD ["python", "-m", "main.py"]
+HEALTHCHECK CMD curl --fail http://localhost:8000/health || exit 1
+
+ENV PYTHONPATH=/app
+
+CMD ["python", "main.py"]
