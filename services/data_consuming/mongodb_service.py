@@ -1,8 +1,18 @@
 from pymongo import MongoClient
-import logging
-from datetime import datetime
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
-logger = logging.getLogger(__name__)
+from shared.logger import Logger
+from datetime import datetime
+from config import DataConsumingConfig
+
+config = DataConsumingConfig.from_env()
+logger = Logger.get_logger(
+    name="mongodb_service",
+    es_host=config.logger_es_host,
+    index=config.logger_index
+)
 
 class MongoDBService:
     """MongoDB Service to store file content with uuid"""
@@ -21,6 +31,7 @@ class MongoDBService:
     def _initialize_connection(self):
         "Initialize MongoDB connection"
         try:
+            logger.info(f"Attempting to connect to MongoDB at: {self.conn_string}")
             self.client = MongoClient(
                 self.conn_string,
                 serverSelectionTimeoutMS=5000,
@@ -33,28 +44,33 @@ class MongoDBService:
             # Update db and collection
             self.db = self.client[self.database_name]
             self.collection = self.db['processed_messages']
-            logger.info("MongoDB connection established successfully")
+            logger.info(f"MongoDB connection established successfully to database: {self.database_name}")
             
         except Exception as e:
-            logger.error(f"Unexpected MongoDB connection error: {e}")
+            logger.error(f"MongoDB connection failed: {type(e).__name__}: {e}")
+            self.client = None
+            self.db = None
+            self.collection = None
 
     def _setup_indexes(self):
         "Setup indexes to optimize performance"
         try:
             if self.collection is not None:
+                logger.info("Setting up MongoDB indexes...")
                 # Create the index based on the unique_id
                 self.collection.create_index("unique_id", unique=True)
                 self.collection.create_index("processed_at")
                 self.collection.create_index("metadata.data_type")
                 logger.info("MongoDB indexes created successfully")
             else:
-                logger.warning("MongoDB collection is None, cannot create indexes.")
+                logger.error("MongoDB collection is None - cannot create indexes")
         except Exception as e:
-            logger.warning(f"Failed to create indexes: {e}")
+            logger.error(f"Failed to create MongoDB indexes: {type(e).__name__}: {e}")
 
     def insert_document(self, doc_id, content, metadata):
         "Insert document into MongoDB"
         try:
+            logger.info(f"Inserting document with ID: {doc_id}")
             # Prepare document
             document = {
                 'unique_id': doc_id,
@@ -64,16 +80,16 @@ class MongoDBService:
                 'status': 'processed'
             }
             if self.collection is not None:
-                # Inster document into the collection
+                # Insert document into the collection
                 result = self.collection.insert_one(document)
-                logger.info(f"Document inserted with ID: {result.inserted_id}")
+                logger.info(f"Document inserted successfully in MongoDB with ObjectID: {result.inserted_id}")
                 return result.inserted_id
             else:
-                logger.error("MongoDB collection is None, cannot insert document.")
+                logger.error(f"MongoDB collection is None - cannot insert document with ID: {doc_id}")
                 return None
             
         except Exception as e:
-            logger.error(f"Error inserting document: {e}")
+            logger.error(f"Error inserting document with ID {doc_id}: {type(e).__name__}: {e}")
             return None
 
     def cleanup(self):
@@ -82,5 +98,7 @@ class MongoDBService:
             if self.client:
                 self.client.close()
                 logger.info("MongoDB connection closed successfully")
+            else:
+                logger.info("MongoDB client was not initialized - nothing to cleanup")
         except Exception as e:
-            logger.error(f"Error closing MongoDB connection: {e}")
+            logger.error(f"Error closing MongoDB connection: {type(e).__name__}: {e}")

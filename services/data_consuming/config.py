@@ -22,10 +22,14 @@ class DataConsumingConfig:
     elasticsearch_username: str
     elasticsearch_password: str
     
+    # Logger
+    logger_es_host: str
+    logger_index: str
+    
     @staticmethod
     def from_env() -> "DataConsumingConfig":
         return DataConsumingConfig(
-            mongodb_uri=os.getenv("MONGODB_ATLAS_URI", "mongodb://localhost:21017"),
+            mongodb_uri=os.getenv("MONGODB_ATLAS_URI", "mongodb://localhost:27017"),
             mongodb_db_name=os.getenv("MONGODB_DB_NAME", "kafka_db"),
             mongodb_collection_name=os.getenv("MONGODB_COLLECTION_NAME", "collection"),
             kafka_bootstrap_servers=os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
@@ -35,6 +39,8 @@ class DataConsumingConfig:
             elasticsearch_port=os.getenv("ELASTICSEARCH_PORT", "9200"),
             elasticsearch_index=os.getenv("ELASTICSEARCH_INDEX", "file_metadata"),
             elasticsearch_username=os.getenv("ELASTICSEARCH_USERNAME", "elastic"),
-            elasticsearch_password=os.getenv("ELASTICSEARCH_PASSWORD", "")
+            elasticsearch_password=os.getenv("ELASTICSEARCH_PASSWORD", ""),
+            logger_es_host=os.getenv("LOGGER_ES_HOST", "localhost:9200"),
+            logger_index=os.getenv("LOGGER_INDEX", "muezzin_logs")
         )
     
