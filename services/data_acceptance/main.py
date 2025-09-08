@@ -1,46 +1,60 @@
 import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from shared.logger import Logger
 from file_reader import FilePathGetter
 from metadata import MetadataGetter
 from json_builder import JsonBuilder
 from kafka_publisher import KafkaPublisher
-import logging
+from config import DataAcceptanceConfig
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger(__name__)
+# Initialize the centralized logger
+config = DataAcceptanceConfig.from_env()
+logger = Logger.get_logger(
+    name="data_acceptance_service",
+    es_host=config.logger_es_host,
+    index=config.logger_index
+)
 
 # Set Envs
-FILE_PATH = os.getenv('FILE_PATH', '/app/podcasts/download (1).wav')
+FILE_PATH = os.getenv('FILE_PATH', '/Users/mordechaywolff/Desktop/podcasts/download (1).wav')
 KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'file_metadata_topic')
 KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 
 def main():
     "Handling data acceptance"
     try:
+        logger.info("The Muezzin data acceptance service started successfully")
+        
         # Initiate and activate file path getter
+        logger.info(f"Processing file: {FILE_PATH}")
         path_getter = FilePathGetter(FILE_PATH)
         validated_path = path_getter.get_file_path()
+        logger.info(f"File path validated successfully: {validated_path}")
 
         # Initiate and activate metadata getter
         metadata_getter = MetadataGetter(validated_path)
         metadata = metadata_getter.extract_metadata()
+        logger.info("Metadata extracted successfully from file")
 
         # Initiate and activate json builder
         json_builder = JsonBuilder(metadata, validated_path)
         json_data = json_builder.build_json()
+        logger.info("JSON data structure built successfully")
 
         # Initiate and activate Kafka producer
         kafka_pub = KafkaPublisher(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS, topic=KAFKA_TOPIC)
         kafka_pub.publish(json_data)
+        logger.info("Data acceptance process completed successfully")
         
     except FileNotFoundError as e:
-        logger.error(f"File error: {e}")
+        logger.error(f"File not found error: {type(e).__name__}: {e}")
         return 1
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
+        logger.error(f"Critical error in data acceptance service: {type(e).__name__}: {e}")
         return 1
     return 0
 
 if __name__ == "__main__":
-    logger.info("Initiating data-consuming services...")
     main()
