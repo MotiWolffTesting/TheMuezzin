@@ -29,7 +29,13 @@ class KafkaPublisher:
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 key_serializer=lambda k: k.encode("utf-8") if k else None,
                 linger_ms=10,
-                acks="all",
+                acks=1,  
+                request_timeout_ms=10000,  
+                metadata_max_age_ms=5000,  
+                retries=2, 
+                retry_backoff_ms=500, 
+                max_block_ms=5000, 
+                api_version=(0, 10, 1),
             )
             logger.info(f"Kafka producer initialized successfully for servers: {bootstrap_servers}")
             
@@ -41,7 +47,8 @@ class KafkaPublisher:
         "Send json data to the Kafka topic"
         if not self.producer:
             logger.error("Kafka producer is not initialized - message not sent")
-            return
+            raise RuntimeError("Kafka producer is not initialized")
+        
         try:
             logger.info(f"Publishing message to Kafka topic: {self.topic}")
             # Send json data to the Kafka topic
@@ -51,3 +58,4 @@ class KafkaPublisher:
             
         except Exception as e:
             logger.error(f"Error publishing message to Kafka topic '{self.topic}': {type(e).__name__}: {e}")
+            raise
