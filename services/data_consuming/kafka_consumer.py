@@ -1,11 +1,12 @@
 import json
 import logging
 import uuid
+import base64
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable
 from elasticsearch_service import ElasticsearchService
 from mongodb_service import MongoDBService
-from config import DataProcessingConfig
+from config import DataConsumingConfig
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +14,7 @@ class KafkaSubscriber:
     """Kafka consumer"""
     def __init__(self):
         # Load config from environment
-        self.config = DataProcessingConfig.from_env()
+        self.config = DataConsumingConfig.from_env()
         self.topic_name = self.config.kafka_topic_name
         self.group_id = self.config.kafka_group_id
         self.consumer = None
@@ -52,7 +53,7 @@ class KafkaSubscriber:
         # Initiate Elastic
         try:
             self.elasticsearch = ElasticsearchService(
-                es_host=f"http://{self.config.elasticsearch_host}:{self.config.elasticsearch_port}",
+                es_host=self.config.elasticsearch_host,
                 index_name=self.config.elasticsearch_index
             )
             logger.info("Elasticsearch service initialized.")
@@ -72,8 +73,8 @@ class KafkaSubscriber:
 
     def start_consuming(self):
         "Start consume message from Kafka"
-        if not self.consumer or not self.data_processor:
-            logger.error("Consumer or processor not initialized.")
+        if not self.consumer:
+            logger.error("Consumer not initialized.")
             return
         
         logger.info("Starting Kafka consumption...")
@@ -91,7 +92,7 @@ class KafkaSubscriber:
         "Split the message from the topic to metadata, content etc."
         try:
             data = message.value
-            logger.info(f"Processing message: {data}")
+            logger.info(f"Processing message with keys: {list(data.keys()) if isinstance(data, dict) else 'Invalid data'}")
             if isinstance(data, dict) and 'error' in data:
                 logger.warning(f"Skipping corrupted message: {data}")
                 return
@@ -100,9 +101,19 @@ class KafkaSubscriber:
             doc_id = data.get('id') or str(uuid.uuid4())
             data['id'] = doc_id
 
-            # Split metadata/content
-            metadata = {k: v for k, v in data.items() if k != 'content'}
-            content = data.get('content')
+            # Read binary content from file path
+            binary_content = None
+            validated_path = data.get('validated_path')
+            if validated_path:
+                try:
+                    with open(validated_path, 'rb') as file:
+                        binary_content = file.read()
+                        logger.info(f"Read {len(binary_content)} bytes from {validated_path}")
+                except Exception as e:
+                    logger.error(f"Failed to read file content from {validated_path}: {e}")
+
+            # Prepare metadata (exclude validated_path from stored metadata if desired)
+            metadata = {k: v for k, v in data.items()}
 
             # Send metadata to Elasticsearch
             if self.elasticsearch:
@@ -116,8 +127,8 @@ class KafkaSubscriber:
             # Send content and metadata to MongoDB
             if self.mongodb:
                 try:
-                    self.mongodb.insert_document(doc_id, content, metadata)
-                    logger.info(f"Document inserted in MongoDB for id {doc_id}.")
+                    self.mongodb.insert_document(doc_id, binary_content, metadata)
+                    logger.info(f"Document with binary content inserted in MongoDB for id {doc_id}.")
                     
                 except Exception as e:
                     logger.error(f"Failed to insert document in MongoDB: {e}")
@@ -147,4 +158,3 @@ class KafkaSubscriber:
 
     def get_failed_messages(self):
         return self.failed_messages
-                    
