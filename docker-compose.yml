@@ -13,14 +13,19 @@ services:
       ELASTICSEARCH_HOST: elasticsearch
       ELASTICSEARCH_PORT: 9200
       ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
     restart: unless-stopped
   data_acceptance:
     build: ./services/data_acceptance
     depends_on:
       - kafka
+      - elasticsearch
     environment:
       KAFKA_TOPIC_NAME: file_metadata_topic
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
     restart: unless-stopped
     volumes:
       - /Users/mordechaywolff/Desktop/podcasts:/app/podcasts
