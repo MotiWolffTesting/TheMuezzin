@@ -1,34 +1,13 @@
 services:
-  data_consuming:
-    build: ./services/data_consuming
-    depends_on:
-      - kafka
-      - mongodb
-      - elasticsearch
+  # Core infrastructure services
+  zookeeper:
+    image: bitnami/zookeeper:latest
     environment:
-      KAFKA_TOPIC_NAME: file_metadata_topic
-      KAFKA_GROUP_ID: data-consuming-group
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      MONGODB_ATLAS_URI: mongodb://mongodb:27017
-      ELASTICSEARCH_HOST: elasticsearch
-      ELASTICSEARCH_PORT: 9200
-      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD}
-      LOGGER_ES_HOST: elasticsearch:9200
-      LOGGER_INDEX: muezzin_logs
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    ports:
+      - "2181:2181"
     restart: unless-stopped
-  data_acceptance:
-    build: ./services/data_acceptance
-    depends_on:
-      - kafka
-      - elasticsearch
-    environment:
-      KAFKA_TOPIC_NAME: file_metadata_topic
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      LOGGER_ES_HOST: elasticsearch:9200
-      LOGGER_INDEX: muezzin_logs
-    restart: unless-stopped
-    volumes:
-      - /Users/mordechaywolff/Desktop/podcasts:/app/podcasts
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     environment:
@@ -41,23 +20,101 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
-    ports:
-      - "2181:2181"
+    restart: unless-stopped
+
   mongodb:
     image: mongo:latest
     ports:
       - "27017:27017"
     restart: unless-stopped
+
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     environment:
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
       - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
+    restart: unless-stopped
+
+  # Application services
+  data_acceptance:
+    build: ./services/data_acceptance
+    depends_on:
+      - kafka
+      - elasticsearch
+    environment:
+      KAFKA_TOPIC_NAME: file_metadata_topic
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
+      FILE_PATH: /app/podcasts
+    restart: unless-stopped
+    volumes:
+      - /Users/mordechaywolff/Desktop/podcasts:/app/podcasts
+
+  data_consuming:
+    build: ./services/data_consuming
+    depends_on:
+      - kafka
+      - mongodb
+      - elasticsearch
+    environment:
+      KAFKA_TOPIC_NAME: file_metadata_topic
+      KAFKA_GROUP_ID: data-consuming-group
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MONGODB_ATLAS_URI: mongodb://mongodb:27017
+      MONGODB_DB_NAME: kafka_db
+      MONGODB_COLLECTION_NAME: processed_messages
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      ELASTICSEARCH_INDEX: file_metadata
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
+    restart: unless-stopped
+
+  data_transcriber:
+    build: ./services/data_transcriber
+    depends_on:
+      - mongodb
+      - elasticsearch
+    environment:
+      MONGODB_ATLAS_URI: mongodb://mongodb:27017
+      MONGODB_DB_NAME: kafka_db
+      MONGODB_COLLECTION_NAME: processed_messages
+      ELASTICSEARCH_HOST: elasticsearch
+      ELASTICSEARCH_PORT: 9200
+      ELASTICSEARCH_INDEX: file_metadata
+      ELASTICSEARCH_USERNAME: elastic
+      ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:-}
+      SPEECH_RECOGNITION_LANGUAGE: en-US
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
+    restart: unless-stopped
+
+  bds_analysis:
+    build: ./services/bds_analysis
+    depends_on:
+      - kafka
+      - mongodb
+      - elasticsearch
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_TOPIC_TRANSCRIPTION: audio_transcription
+      KAFKA_TOPIC_BDS_RESULTS: bds_analysis_results
+      KAFKA_CONSUMER_GROUP_BDS: bds_analysis_group
+      MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/
+      MONGODB_DATABASE_NAME: muezzin_db
+      MONGODB_COLLECTION_BDS: bds_analysis
+      ELASTICSEARCH_HOST: elasticsearch:9200
+      ELASTICSEARCH_INDEX_BDS: bds_analysis
+      LOGGER_ES_HOST: elasticsearch:9200
+      LOGGER_INDEX: muezzin_logs
+      BDS_THRESHOLD_LOW: 10.0
+      BDS_THRESHOLD_MEDIUM: 30.0
+      BDS_THRESHOLD_HIGH: 60.0
     restart: unless-stopped
