@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from shared.logger import Logger
 from .config import DataTranscriberConfig
 from mongodb_transcriber import TranscriptionManager

@@ -1,6 +1,10 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import json
 import uuid
-import base64
 from typing import Optional
 from shared.logger import Logger
 from kafka import KafkaConsumer

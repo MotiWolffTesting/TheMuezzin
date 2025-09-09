@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from kafka import KafkaProducer
 from kafka.errors import KafkaTimeoutError
 import json

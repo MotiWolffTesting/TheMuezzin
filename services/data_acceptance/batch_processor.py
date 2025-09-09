@@ -1,4 +1,5 @@
 import os
+import sys
 import glob
 import time
 import signal
@@ -15,6 +16,8 @@ def timeout(duration):
         yield
     finally:
         signal.alarm(0)
+        
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from shared.logger import Logger
 from .file_reader import FilePathGetter
