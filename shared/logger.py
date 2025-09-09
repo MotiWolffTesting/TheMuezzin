@@ -1,13 +1,15 @@
 import logging
 from elasticsearch import Elasticsearch
 from datetime import datetime, timezone
+from shared.config import SharedConfig
 
 class Logger:
     _logger = None
     
+    config = SharedConfig.load_env()
     @classmethod
-    def get_logger(cls, name="the_muezzin_logger", es_host="localhost:9200", 
-                   index="muezzin_logs", level=logging.DEBUG):
+    def get_logger(cls, name="the_muezzin_logger", es_host=config.logger_es_host, 
+                   index=config.logger_index, level=logging.DEBUG):
         if cls._logger:
             return cls._logger
             
