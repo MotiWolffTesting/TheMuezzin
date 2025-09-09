@@ -1,10 +1,6 @@
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from shared.logger import Logger
-from config import DataConsumingConfig
+from .config import DataConsumingConfig
 
 # Configure ElasticSearch variables
 config = DataConsumingConfig.from_env()
@@ -33,7 +29,7 @@ class ElasticsearchService:
     def _initialize_connection(self):
         "Init es connection"
         # Sanitize host to remove protocol and port if present
-        host = self.es_host.replace('http://', '').split(':')[0]
+        host = self.es_host.replace('http://', '').replace('https://', '').split(':')[0]
         port = config.elasticsearch_port
         es_url = f"http://{host}:{port}"
         try:
@@ -49,6 +45,7 @@ class ElasticsearchService:
             # Test connection
             info = self.client.info()
             logger.info(f"Successfully connected to Elasticsearch version: {info['version']['number']}")
+            self._ensure_index()
         except Exception as e:
             logger.error(f"Error connecting to Elasticsearch: {type(e).__name__}: {e}")
             # Try a different connection method
@@ -57,9 +54,32 @@ class ElasticsearchService:
                 self.client = Elasticsearch([es_url])
                 info = self.client.info()
                 logger.info(f"Successfully connected to Elasticsearch using alternative method - version: {info['version']['number']}")
+                self._ensure_index()
             except Exception as e2:
                 logger.error(f"Alternative connection also failed: {type(e2).__name__}: {e2}")
                 self.client = None
+    
+    def _ensure_index(self):
+        "Ensure es index exists. if not, create it"
+        try:
+            # Check if the client is connected and there is no index
+            if self.client and not self.client.indices.exists(index=self.index_name):
+                # Create the index
+                self.client.indices.create(
+                    index=self.index_name,
+                    mappings={
+                        'properties': {
+                            'id': {'type': 'keyword'},
+                            'metadata.filesize': {'type': 'long'},
+                            'metadata.duration': {'type': 'float'},
+                            'transcription': {'type': 'text'},
+                            'timestamp': {'type': 'date'}
+                        }
+                    }
+                )
+                logger.info(f"Created Elasticsearch index: {self.index_name}")
+        except Exception as e:
+            logger.error(f"Failed ensuring Elasticsearch index '{self.index_name}': {type(e).__name__}: {e}")
 
     def index_metadata(self, doc_id, metadata):
         "Index metadata in Elasticsearch with doc_id as _id"

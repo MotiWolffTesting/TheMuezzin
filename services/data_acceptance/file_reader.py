@@ -1,9 +1,6 @@
 from pathlib import Path
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from shared.logger import Logger
-from config import DataAcceptanceConfig
+from .config import DataAcceptanceConfig
 
 config = DataAcceptanceConfig.from_env()
 logger = Logger.get_logger(

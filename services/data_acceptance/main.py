@@ -1,13 +1,10 @@
 import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from shared.logger import Logger
-from file_reader import FilePathGetter
-from metadata import MetadataGetter
-from json_builder import JsonBuilder
-from kafka_publisher import KafkaPublisher
-from config import DataAcceptanceConfig
+from .file_reader import FilePathGetter
+from .metadata import MetadataGetter
+from .json_builder import JsonBuilder
+from .kafka_publisher import KafkaPublisher
+from .config import DataAcceptanceConfig
 
 # Initialize the centralized logger
 config = DataAcceptanceConfig.from_env()
@@ -18,9 +15,9 @@ logger = Logger.get_logger(
 )
 
 # Set Envs
-FILE_PATH = os.getenv('FILE_PATH', '/Users/mordechaywolff/Desktop/podcasts/download (1).wav')
-KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'file_metadata_topic')
-KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
+FILE_PATH = config.file_path
+KAFKA_TOPIC = config.kafka_topic_name
+KAFKA_BOOTSTRAP_SERVERS = config.kafka_bootstrap_servers
 
 def main():
     "Handling data acceptance"

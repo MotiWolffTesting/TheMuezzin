@@ -1,11 +1,8 @@
 from kafka import KafkaProducer
+from kafka.errors import KafkaTimeoutError
 import json
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from shared.logger import Logger
-from config import DataAcceptanceConfig
+from .config import DataAcceptanceConfig
 
 config = DataAcceptanceConfig.from_env()
 logger = Logger.get_logger(
@@ -13,6 +10,7 @@ logger = Logger.get_logger(
     es_host=config.logger_es_host,
     index=config.logger_index
 )
+
 
 
 class KafkaPublisher:
@@ -29,13 +27,10 @@ class KafkaPublisher:
                 value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                 key_serializer=lambda k: k.encode("utf-8") if k else None,
                 linger_ms=10,
-                acks=1,  
-                request_timeout_ms=10000,  
-                metadata_max_age_ms=5000,  
-                retries=2, 
-                retry_backoff_ms=500, 
-                max_block_ms=5000, 
-                api_version=(0, 10, 1),
+                acks='all',
+                request_timeout_ms=15000,
+                retries=5,
+                retry_backoff_ms=500,
             )
             logger.info(f"Kafka producer initialized successfully for servers: {bootstrap_servers}")
             
@@ -51,11 +46,16 @@ class KafkaPublisher:
         
         try:
             logger.info(f"Publishing message to Kafka topic: {self.topic}")
-            # Send json data to the Kafka topic
-            self.producer.send(self.topic, json_data)
+            
+            # Send the message to the Kafka topic and wait
+            future = self.producer.send(self.topic, json_data)
+            future.get(timeout=15)
             self.producer.flush()
             logger.info(f"Message published successfully to Kafka topic '{self.topic}'")
             
+        except KafkaTimeoutError as e:
+            logger.error(f"Kafka timeout publishing to '{self.topic}': {type(e).__name__}: {e}")
+            raise
         except Exception as e:
             logger.error(f"Error publishing message to Kafka topic '{self.topic}': {type(e).__name__}: {e}")
             raise

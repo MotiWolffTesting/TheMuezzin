@@ -1,11 +1,7 @@
 from pymongo import MongoClient
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from shared.logger import Logger
 from datetime import datetime
-from config import DataConsumingConfig
+from .config import DataConsumingConfig
 
 config = DataConsumingConfig.from_env()
 logger = Logger.get_logger(
@@ -57,8 +53,8 @@ class MongoDBService:
         try:
             if self.collection is not None:
                 logger.info("Setting up MongoDB indexes...")
-                # Create the index based on the unique_id
-                self.collection.create_index("unique_id", unique=True)
+                # Create the index based on the id
+                self.collection.create_index("id", unique=True)
                 self.collection.create_index("processed_at")
                 self.collection.create_index("metadata.data_type")
                 logger.info("MongoDB indexes created successfully")
@@ -73,7 +69,7 @@ class MongoDBService:
             logger.info(f"Inserting document with ID: {doc_id}")
             # Prepare document
             document = {
-                'unique_id': doc_id,
+                'id': doc_id,
                 'data': content,
                 'metadata': metadata,
                 'processed_at': datetime.now(),

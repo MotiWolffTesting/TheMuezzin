@@ -1,16 +1,13 @@
 import json
 import uuid
 import base64
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
+from typing import Optional
 from shared.logger import Logger
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable
-from elasticsearch_service import ElasticsearchService
-from mongodb_service import MongoDBService
-from config import DataConsumingConfig
+from .elasticsearch_service import ElasticsearchService
+from .mongodb_service import MongoDBService
+from .config import DataConsumingConfig
 
 config = DataConsumingConfig.from_env()
 logger = Logger.get_logger(
@@ -20,10 +17,9 @@ logger = Logger.get_logger(
 )
 
 class KafkaSubscriber:
-    """Kafka consumer"""
-    def __init__(self):
+    def __init__(self, config: Optional[DataConsumingConfig] = None):
         # Load config from environment
-        self.config = DataConsumingConfig.from_env()
+        self.config = config or DataConsumingConfig.from_env()
         self.topic_name = self.config.kafka_topic_name
         self.group_id = self.config.kafka_group_id
         self.consumer = None
@@ -44,7 +40,7 @@ class KafkaSubscriber:
                 value_deserializer=lambda v: json.loads(v.decode("utf-8")),
                 group_id=self.group_id,
                 auto_offset_reset='earliest',
-                enable_auto_commit=True
+                enable_auto_commit=False
             )
             logger.info(f"Kafka consumer initialized successfully for topic '{self.topic_name}' with group_id '{self.group_id}'")
         except NoBrokersAvailable:
