@@ -56,7 +56,7 @@ Start the infrastructure services individually:
 
 ```bash
 # Create Docker Network
-docker network create themuezzin-net
+docker network create themuezzin-net 2>/dev/null || echo "Network already exists"
 
 # Zookeeper
 docker run -d \
@@ -74,9 +74,10 @@ docker run -d \
   -p 9092:9092 \
   -e KAFKA_BROKER_ID=1 \
   -e KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181 \
+  -e KAFKA_LISTENERS=PLAINTEXT://:9092 \
   -e KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092 \
   -e KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1 \
-  confluentinc/cp-kafka:latest
+  confluentinc/cp-kafka:7.5.0
 
 # MongoDB
 docker run -d \
@@ -92,8 +93,9 @@ docker run -d \
   -p 9200:9200 \
   -e "discovery.type=single-node" \
   -e "xpack.security.enabled=false" \
+  -e "xpack.security.http.ssl.enabled=false" \
   -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
-  elasticsearch:8.11.0
+  docker.elastic.co/elasticsearch/elasticsearch:8.11.0
 
 # Kibana (optional, for ES visualization)
 docker run -d \
@@ -104,11 +106,50 @@ docker run -d \
   kibana:8.11.0
 ```
 
+Now run the local project
+
+```bash
+# Data Acceptance Service:
+cd services/data_acceptance
+   export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+   export KAFKA_TOPIC_NAME=file_metadata_topic
+   export LOGGER_ES_HOST=localhost:9200
+   export LOGGER_INDEX=muezzin_logs
+   python main.py
+
+# Data Consuming Service:
+cd services/data_consuming
+  export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+  export KAFKA_TOPIC_NAME=file_metadata_topic
+  export KAFKA_GROUP_ID=data-consuming-group
+  export MONGODB_ATLAS_URI=mongodb://localhost:27017
+  export ELASTICSEARCH_HOST=localhost
+  export ELASTICSEARCH_PORT=9200
+  export LOGGER_ES_HOST=localhost:9200
+  export LOGGER_INDEX=muezzin_logs
+  python main.py
+
+# Data Transcriber Service:
+cd services/data_transcriber
+  export MONGODB_ATLAS_URI=mongodb://localhost:27017
+  export MONGODB_DB_NAME=kafka_db
+  export MONGODB_COLLECTION_NAME=collection
+  export ELASTICSEARCH_HOST=localhost
+  export ELASTICSEARCH_PORT=9200
+  export ELASTICSEARCH_INDEX=file_metadata
+  export LOGGER_ES_HOST=localhost:9200
+  export LOGGER_INDEX=muezzin_logs
+  export SPEECH_RECOGNITION_LANGUAGE=en-US
+  python main.py
+   
+```
+
 Check if everything is running:
 ```bash
 # Elasticsearch health
 curl http://localhost:9200/_cluster/health
 ```
+
 
 Then run the Python services locally. The batch processor handles multiple files at once with retry logic for Kafka timeouts. It processes files from `/Users/mordechaywolff/Desktop/podcasts`.
 
