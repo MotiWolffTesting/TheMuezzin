@@ -7,7 +7,7 @@ from kafka import KafkaProducer
 from kafka.errors import KafkaTimeoutError
 import json
 from shared.logger import Logger
-from .config import DataAcceptanceConfig
+from services.data_acceptance.config import DataAcceptanceConfig
 
 config = DataAcceptanceConfig.from_env()
 logger = Logger.get_logger(

@@ -9,8 +9,8 @@ from pymongo import MongoClient
 from elasticsearch import Elasticsearch
 
 from shared.logger import Logger
-from .config import DataTranscriberConfig
-from .transcriber import AudioTranscriber
+from services.data_transcriber.config import DataTranscriberConfig
+from services.data_transcriber.transcriber import AudioTranscriber
 
 class TranscriptionManager:
     """Handles reading audio from MongoDB, transcribing, and updating MongoDB and Elasticsearch"""

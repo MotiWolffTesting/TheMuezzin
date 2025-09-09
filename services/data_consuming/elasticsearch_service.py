@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
 from shared.logger import Logger
-from .config import DataConsumingConfig
+from services.data_consuming.config import DataConsumingConfig
 
 # Configure ElasticSearch variables
 config = DataConsumingConfig.from_env()

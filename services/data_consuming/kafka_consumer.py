@@ -9,9 +9,9 @@ from typing import Optional
 from shared.logger import Logger
 from kafka import KafkaConsumer
 from kafka.errors import NoBrokersAvailable
-from .elasticsearch_service import ElasticsearchService
-from .mongodb_service import MongoDBService
-from .config import DataConsumingConfig
+from services.data_consuming.elasticsearch_service import ElasticsearchService
+from services.data_consuming.mongodb_service import MongoDBService
+from services.data_consuming.config import DataConsumingConfig
 
 config = DataConsumingConfig.from_env()
 logger = Logger.get_logger(
