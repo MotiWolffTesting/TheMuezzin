@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from tinytag import TinyTag
 from typing import Dict, Any
 from shared.logger import Logger

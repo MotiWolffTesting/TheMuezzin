@@ -1,6 +1,10 @@
 import speech_recognition as sr
 import tempfile 
 import os
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 from pydub import AudioSegment
 from typing import Optional
 from shared.logger import Logger
