@@ -61,7 +61,15 @@ class TranscriptionManager:
     
     def _fetch_next_document(self) -> Optional[dict]:
         "Fetch a document that has not been transcribed yet"
-        return self.collection.find_one({"transcription_status": {"$ne": "processed"}}, sort=[("processed_at", -1)])
+        return self.collection.find_one({
+            "$and": [
+                {"$or": [
+                    {"transcription_status": {"$exists": False}},
+                    {"transcription_status": {"$nin": ["processed", "invalid"]}}
+                ]},
+                {"data": {"$exists": True, "$ne": None}}
+            ]
+        }, sort=[("processed_at", -1)])
 
     def _extract_filename(self, doc: dict) -> str:
         "Helper function to extract the filename from document metadata, ensuring the metadata is correctly received and parsed"
