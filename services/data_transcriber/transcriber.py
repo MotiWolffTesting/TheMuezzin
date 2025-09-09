@@ -3,12 +3,8 @@ import tempfile
 import os
 from pydub import AudioSegment
 from typing import Optional
-import sys
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
-
 from shared.logger import Logger
-from config import DataTranscriberConfig
+from .config import DataTranscriberConfig
 
 class AudioTranscriber:
     """Audio transcription service using SpeechRecognition library"""

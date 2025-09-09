@@ -1,10 +1,8 @@
 import os
-import sys
 import glob
 import time
 import signal
 from contextlib import contextmanager
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 @contextmanager
 def timeout(duration):
@@ -19,11 +17,11 @@ def timeout(duration):
         signal.alarm(0)
 
 from shared.logger import Logger
-from file_reader import FilePathGetter
-from metadata import MetadataGetter
-from json_builder import JsonBuilder
-from kafka_publisher import KafkaPublisher
-from config import DataAcceptanceConfig
+from .file_reader import FilePathGetter
+from .metadata import MetadataGetter
+from .json_builder import JsonBuilder
+from .kafka_publisher import KafkaPublisher
+from .config import DataAcceptanceConfig
 
 def process_file(file_path, i, total_files, kafka_pub, logger):
     "Process a single file and publish its metadata to Kafka"
