@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from pymongo import MongoClient
 from shared.logger import Logger
 from datetime import datetime
-from .config import DataConsumingConfig
+from services.data_consuming.config import DataConsumingConfig
 
 config = DataConsumingConfig.from_env()
 logger = Logger.get_logger(

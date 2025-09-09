@@ -20,11 +20,11 @@ def timeout(duration):
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from shared.logger import Logger
-from .file_reader import FilePathGetter
-from .metadata import MetadataGetter
-from .json_builder import JsonBuilder
-from .kafka_publisher import KafkaPublisher
-from .config import DataAcceptanceConfig
+from services.data_acceptance.file_reader import FilePathGetter
+from services.data_acceptance.metadata import MetadataGetter
+from services.data_acceptance.json_builder import JsonBuilder
+from services.data_acceptance.kafka_publisher import KafkaPublisher
+from services.data_acceptance.config import DataAcceptanceConfig
 
 def process_file(file_path, i, total_files, kafka_pub, logger):
     "Process a single file and publish its metadata to Kafka"

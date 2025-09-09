@@ -4,8 +4,8 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from shared.logger import Logger
-from .kafka_consumer import KafkaSubscriber
-from .config import DataConsumingConfig
+from services.data_consuming.kafka_consumer import KafkaSubscriber
+from services.data_consuming.config import DataConsumingConfig
 
 # Initialize the centralized logger
 config = DataConsumingConfig.from_env()

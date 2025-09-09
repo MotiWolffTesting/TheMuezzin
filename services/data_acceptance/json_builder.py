@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 import json
 from shared.logger import Logger
-from .config import DataAcceptanceConfig
+from services.data_acceptance.config import DataAcceptanceConfig
 
 config = DataAcceptanceConfig.from_env()
 logger = Logger.get_logger(
