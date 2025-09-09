@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from shared.logger import Logger
 from services.data_transcriber.config import DataTranscriberConfig
-from mongodb_transcriber import TranscriptionManager
+from services.data_transcriber.mongodb_transcriber import TranscriptionManager
 
 
 def main() -> int:
