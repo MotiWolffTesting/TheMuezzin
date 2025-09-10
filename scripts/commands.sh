@@ -110,6 +110,18 @@ cd services/data_acceptance
    export KAFKA_TOPIC=file_metadata_topic
    python batch_processor.py
 
+# Query Service API (runs in background on :8080)
+cd ../query_service
+   export ELASTICSEARCH_HOST=localhost
+   export ELASTICSEARCH_PORT=9200
+   export ELASTICSEARCH_INDEX=file_metadata
+   export ELASTICSEARCH_INDEX_BDS=bds_analysis
+   export MONGODB_ATLAS_URI=mongodb://localhost:27017
+   export MONGODB_DB_NAME=kafka_db
+   export MONGODB_COLLECTION_NAME=processed_messages
+   nohup ../../.venv311/bin/uvicorn services.query_service.main:app \
+     --host 0.0.0.0 --port 8080 >/tmp/query_service.log 2>&1 &
+
 # Data Consuming Service:
   cd services/data_consuming
   export KAFKA_BOOTSTRAP_SERVERS=localhost:9092
