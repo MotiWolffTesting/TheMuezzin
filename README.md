@@ -40,6 +40,19 @@ This system takes audio files (specifically WAV format), extracts their metadata
 
 The `sys.path.append` approach for shared modules isn't the most "Pythonic" way, but it's simple and works for this project size.
 
+## Threshold Justification
+
+### Chosen Thresholds:
+- **5% (Low)**: Catches content with isolated threatening terms
+- **15% (Medium)**: Identifies content with systematic use of threatening language  
+- **30% (High)**: Flags content with extensive threatening content requiring immediate attention
+
+### Reasoning:
+- **Balanced approach**: Sensitivity vs specificity
+- **Based on content analysis**: Typical patterns in threatening content
+- **Configurable**: Can be adjusted based on operational needs
+- **Documented**: Clear justification for each threshold
+
 ## File structure
 
 ```

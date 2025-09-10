@@ -7,6 +7,8 @@ from typing import Optional
 import time
 from pymongo import MongoClient
 from elasticsearch import Elasticsearch
+from kafka import KafkaProducer
+import json
 
 from shared.logger import Logger
 from services.data_transcriber.config import DataTranscriberConfig
@@ -28,6 +30,20 @@ class TranscriptionManager:
         self.mongo_db = self.mongo_client[config.mongodb_db_name]
         self.collection = self.mongo_db[config.mongodb_collection_name]
         self.es = self._create_es_client(config.elasticsearch_host, config.elasticsearch_port)
+        # Initialize Kafka producer for BDS pipeline
+        self.kafka_bootstrap = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
+        self.bds_transcription_topic = os.getenv("KAFKA_TOPIC_TRANSCRIPTION", "audio_transcription")
+        try:
+            self.producer = KafkaProducer(
+                bootstrap_servers=self.kafka_bootstrap,
+                value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+                linger_ms=10,
+                acks='all',
+            )
+            self.logger.info(f"Kafka producer for BDS initialized on {self.kafka_bootstrap}, topic '{self.bds_transcription_topic}'")
+        except Exception as e:
+            self.logger.error(f"Failed to init Kafka producer for BDS: {type(e).__name__}: {e}")
+            self.producer = None
         
     def _create_mongo_client(self, uri: str) -> MongoClient:
         "Connect to MongoDB Client"
@@ -93,6 +109,21 @@ class TranscriptionManager:
             self.logger.info(f"Transcription updated in Elasticsearch for id={doc_id}")
         except Exception as e:
             self.logger.error(f"Failed to update ElasticSearch for id={doc_id}: {type(e).__name__}: {e}")
+
+    def _publish_transcription_to_kafka(self, text: Optional[str], filename: str) -> None:
+        "Publish the transcription to the BDS Kafka topic if producer is available"
+        if not text:
+            return
+        if not self.producer:
+            self.logger.error("Kafka producer not initialized - skipping BDS publish")
+            return
+        try:
+            payload = {"text": text, "filename": filename}
+            self.producer.send(self.bds_transcription_topic, payload)
+            self.producer.flush()
+            self.logger.info(f"Published transcription to Kafka topic '{self.bds_transcription_topic}' for file '{filename}'")
+        except Exception as e:
+            self.logger.error(f"Failed publishing transcription to Kafka: {type(e).__name__}: {e}")
         
     def run(self) -> None:
         "Run the above processes"
@@ -123,6 +154,9 @@ class TranscriptionManager:
                 # Update Elasticsearch with transcription (per guidelines)
                 self._update_es_transcription(str(doc_id), text)
                 self.logger.info(f"Transcription stored in Elasticsearch for id={doc_id}")
+
+                # Publish to Kafka for BDS analysis
+                self._publish_transcription_to_kafka(text=text, filename=filename)
                 
                 # Mark as processed in MongoDB
                 self.collection.update_one({"_id": doc["_id"]}, {"$set": {"transcription_status": "processed"}})
