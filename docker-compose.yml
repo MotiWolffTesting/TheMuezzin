@@ -41,7 +41,9 @@ services:
 
   # Application services
   data_acceptance:
-    build: ./services/data_acceptance
+    build:
+      context: .
+      dockerfile: services/data_acceptance/Dockerfile
     depends_on:
       - kafka
       - elasticsearch
@@ -56,7 +58,9 @@ services:
       - /Users/mordechaywolff/Desktop/podcasts:/app/podcasts
 
   data_consuming:
-    build: ./services/data_consuming
+    build:
+      context: .
+      dockerfile: services/data_consuming/Dockerfile
     depends_on:
       - kafka
       - mongodb
@@ -78,7 +82,9 @@ services:
     restart: unless-stopped
 
   data_transcriber:
-    build: ./services/data_transcriber
+    build:
+      context: .
+      dockerfile: services/data_transcriber/Dockerfile
     depends_on:
       - mongodb
       - elasticsearch
@@ -97,7 +103,9 @@ services:
     restart: unless-stopped
 
   bds_analysis:
-    build: ./services/bds_analysis
+    build:
+      context: .
+      dockerfile: services/bds_analysis/Dockerfile
     depends_on:
       - kafka
       - mongodb

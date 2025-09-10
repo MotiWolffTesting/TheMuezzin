@@ -47,7 +47,7 @@ class BDSAnalysisConfig:
             elasticsearch_index_bds=os.getenv('ELASTICSEARCH_INDEX_BDS', 'bds_analysis'),
             logger_es_host=os.getenv('LOGGER_ES_HOST', 'localhost:9200'),
             logger_index=os.getenv('LOGGER_INDEX', 'muezzin_logs'),
-            bds_threshold_low=float(os.getenv('BDS_THRESHOLD_LOW', '10.0')),
-            bds_threshold_medium=float(os.getenv('BDS_THRESHOLD_MEDIUM', '30.0')),
-            bds_threshold_high=float(os.getenv('BDS_THRESHOLD_HIGH', '60.0'))
+            bds_threshold_low=float(os.getenv('BDS_THRESHOLD_LOW', '5.0')),
+            bds_threshold_medium=float(os.getenv('BDS_THRESHOLD_MEDIUM', '15.0')),
+            bds_threshold_high=float(os.getenv('BDS_THRESHOLD_HIGH', '30.0'))
         )

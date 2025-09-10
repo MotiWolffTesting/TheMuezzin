@@ -34,8 +34,10 @@ class BDSThreatAnalyzer:
             ("free", "palestine"), ("boycott", "israel")
         ]
         
-        # Set thresholds
-        self.bds_threshold = 20.0  
+        # Set thresholds from config
+        self.bds_threshold_low = self.config.bds_threshold_low
+        self.bds_threshold_medium = self.config.bds_threshold_medium  
+        self.bds_threshold_high = self.config.bds_threshold_high 
         
         self.logger.info("BDS threat analyzer initiated successfully")
         
@@ -54,17 +56,23 @@ class BDSThreatAnalyzer:
         pair_count = sum(1 for word1, word2 in self.threat_word_pairs 
                         if word1 in text_lower and word2 in text_lower)
         
-        # Calculate BDS percentage
-        score = (high_count * 2) + (medium_count * 1) + (pair_count * 3)
-        bds_percentage = min(score * 5, 100.0)
+        # Calculate BDS percentage based on word coverage methodology
+        total_words = len(text_lower.split())
+        if total_words == 0:
+            bds_percentage = 0.0
+        else:
+            # High threat words get 2x weight, medium get 1x, pairs get 3x
+            weighted_score = (high_count * 2) + (medium_count * 1) + (pair_count * 3)
+            # Calculate percentage based on coverage of threatening words
+            bds_percentage = min((weighted_score / total_words) * 100, 100.0)
         
-        # Determine threat level and is_bds
-        is_bds = bds_percentage >= self.bds_threshold
-        if bds_percentage >= 50:
+         # Determine threat level and is_bds using configurable thresholds
+        is_bds = bds_percentage >= self.config.bds_threshold_medium
+        if bds_percentage >= self.config.bds_threshold_high:
             threat_level = 'high'
-        elif bds_percentage >= 20:
+        elif bds_percentage >= self.config.bds_threshold_medium:
             threat_level = 'medium'
-        elif bds_percentage >= 5:
+        elif bds_percentage >= self.config.bds_threshold_low:
             threat_level = 'low'
         else:
             threat_level = 'none'
@@ -94,5 +102,6 @@ class BDSThreatAnalyzer:
             'medium_threat_count': 0,
             'pair_count': 0
         }
+    
     
     
